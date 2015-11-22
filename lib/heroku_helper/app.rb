@@ -115,5 +115,10 @@ module HerokuHelper
         end
       end
     end
+
+    def restart
+      heroku = PlatformAPI.connect_oauth @api_key
+      heroku.dyno.restart_all @app_name
+    end
   end
 end
