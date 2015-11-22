@@ -1,11 +1,7 @@
 require 'spec_helper'
 
-describe Heroku::Helper do
+describe HerokuHelper do
   it 'has a version number' do
-    expect(Heroku::Helper::VERSION).not_to be nil
-  end
-
-  it 'does something useful' do
-    expect(false).to eq(true)
+    expect(HerokuHelper::VERSION).not_to be nil
   end
 end
