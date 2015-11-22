@@ -120,5 +120,11 @@ module HerokuHelper
       heroku = PlatformAPI.connect_oauth @api_key
       heroku.dyno.restart_all @app_name
     end
+
+    def version
+      heroku = PlatformAPI.connect_oauth @api_key
+      build = heroku.build.list(@app_name).last
+      build['source_blob']['version']
+    end
   end
 end
