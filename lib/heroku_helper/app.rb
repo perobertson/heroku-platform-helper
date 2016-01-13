@@ -9,7 +9,7 @@ module HerokuHelper
       @app_name = app_name
     end
 
-    def deploy(branch:, worker: nil, clock: nil)
+    def deploy(branch:, worker: nil, clock: nil, enable_maintenance: false)
       remote = @app_name
       heroku = PlatformAPI.connect_oauth @api_key
 
@@ -26,14 +26,14 @@ module HerokuHelper
       end
 
       scale worker: 0, clock: 0
-      maintenance true
+      maintenance(true) if enable_maintenance
 
       unless system "git push #{remote} #{branch}:master"
         fail "Failed to push branch(#{branch}) to remote(#{remote})"
       end
 
       migrate
-      maintenance false
+      maintenance(false) if enable_maintenance
       scale worker: worker, clock: clock
     end
 
