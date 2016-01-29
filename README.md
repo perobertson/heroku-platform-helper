@@ -1,6 +1,8 @@
 # HerokuHelper
 
 [![Gem Version](https://badge.fury.io/rb/heroku-platform-helper.svg)](https://badge.fury.io/rb/heroku-platform-helper)
+[![Code Climate](https://codeclimate.com/github/perobertson/heroku-platform-helper/badges/gpa.svg)](https://codeclimate.com/github/perobertson/heroku-platform-helper)
+[![Test Coverage](https://codeclimate.com/github/perobertson/heroku-platform-helper/badges/coverage.svg)](https://codeclimate.com/github/perobertson/heroku-platform-helper/coverage)
 
 Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/heroku_helper`. To experiment with that code, run `bin/console` for an interactive prompt.
 
