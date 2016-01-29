@@ -3,7 +3,7 @@ require 'spec_helper'
 RSpec.describe HerokuHelper::App do
   before do
     @client = double('client')
-    expect(PlatformAPI).to receive(:connect_oauth).once { @client }
+    expect(PlatformAPI).to receive(:connect_oauth) { @client }
 
     @logger = double('logger')
     HerokuHelper.logger = @logger
@@ -14,10 +14,10 @@ RSpec.describe HerokuHelper::App do
   it 'can retrieve the running version' do
     build = double('build')
 
-    expect(@logger).to receive(:info).once.with(/APP_NAME.*v1.3.0/)
+    expect(@logger).to receive(:info).with(/APP_NAME.*v1.3.0/)
 
-    expect(@client).to receive(:build).once.with(no_args) { build }
-    expect(build).to receive(:list).once.with(app.app_name) {
+    expect(@client).to receive(:build).with(no_args) { build }
+    expect(build).to receive(:list).with(app.app_name) {
       [
         {
           'source_blob' => {
@@ -32,10 +32,10 @@ RSpec.describe HerokuHelper::App do
   it 'can restart all the dynos' do
     dyno = double('dyno')
 
-    expect(@logger).to receive(:info).once.with(/APP_NAME.*restarted/)
+    expect(@logger).to receive(:info).with(/APP_NAME.*restarted/)
 
-    expect(@client).to receive(:dyno).once.with(no_args) { dyno }
-    expect(dyno).to receive(:restart_all).once.with(app.app_name)
+    expect(@client).to receive(:dyno).with(no_args) { dyno }
+    expect(dyno).to receive(:restart_all).with(app.app_name)
     app.restart
   end
 
@@ -153,46 +153,46 @@ RSpec.describe HerokuHelper::App do
   it 'can run migrations' do
     dyno = double('dyno')
 
-    expect(@logger).to receive(:info).once.with(/[Rr]unning migrations/)
+    expect(@logger).to receive(:info).with(/[Rr]unning migrations/)
 
-    expect(@client).to receive(:dyno).once.with(no_args) { dyno }
-    expect(dyno).to receive(:create).once.with(app.app_name, kind_of(Hash)) {
+    expect(@client).to receive(:dyno).with(no_args) { dyno }
+    expect(dyno).to receive(:create).with(app.app_name, kind_of(Hash)) {
       {
         "attach_url" => "rendezvous://rendezvous.runtime.heroku.com:5000/{rendezvous-id}"
       }
     }
-    expect(Rendezvous).to receive(:start).once.with(kind_of(Hash))
+    expect(Rendezvous).to receive(:start).with(kind_of(Hash))
     app.migrate
   end
 
   it 'will log errors when connecting to log output fails for migrations' do
     dyno = double('dyno')
 
-    expect(@logger).to receive(:info).once.with(/[Rr]unning migrations/)
-    expect(@logger).to receive(:error).once.with(/Error capturing output for dyno/)
+    expect(@logger).to receive(:info).with(/[Rr]unning migrations/)
+    expect(@logger).to receive(:error).with(/Error capturing output for dyno/)
 
-    expect(@client).to receive(:dyno).once.with(no_args) { dyno }
-    expect(dyno).to receive(:create).once.with(app.app_name, kind_of(Hash))
+    expect(@client).to receive(:dyno).with(no_args) { dyno }
+    expect(dyno).to receive(:create).with(app.app_name, kind_of(Hash))
     app.migrate
   end
 
   it 'can enable maintenance mode' do
     heroku_app = double('heroku_app')
 
-    expect(@logger).to receive(:info).once.with(/[Ee]nabling maintenance/)
+    expect(@logger).to receive(:info).with(/[Ee]nabling maintenance/)
 
-    expect(@client).to receive(:app).once.with(no_args) { heroku_app }
-    expect(heroku_app).to receive(:update).once.with(app.app_name, hash_including(maintenance: true))
+    expect(@client).to receive(:app).with(no_args) { heroku_app }
+    expect(heroku_app).to receive(:update).with(app.app_name, hash_including(maintenance: true))
     app.maintenance(true)
   end
 
   it 'can disable maintenance mode' do
     heroku_app = double('heroku_app')
 
-    expect(@logger).to receive(:info).once.with(/[Dd]isabling maintenance/)
+    expect(@logger).to receive(:info).with(/[Dd]isabling maintenance/)
 
-    expect(@client).to receive(:app).once.with(no_args) { heroku_app }
-    expect(heroku_app).to receive(:update).once.with(app.app_name, hash_including(maintenance: false))
+    expect(@client).to receive(:app).with(no_args) { heroku_app }
+    expect(heroku_app).to receive(:update).with(app.app_name, hash_including(maintenance: false))
     app.maintenance(false)
   end
 
