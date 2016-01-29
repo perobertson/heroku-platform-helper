@@ -1,9 +1,21 @@
+require 'logger'
 require 'platform-api'
 require 'rendezvous'
-require 'colorize'
 
 module HerokuHelper
+  class << self
+    attr_writer :logger
+
+    def logger
+      @logger ||= Logger.new(STDOUT).tap do |log|
+        log.progname = self.name
+      end
+    end
+  end
+
   class App
+    attr_reader :app_name
+
     def initialize(api_key, app_name)
       @api_key = api_key
       @app_name = app_name
@@ -14,7 +26,7 @@ module HerokuHelper
       heroku = PlatformAPI.connect_oauth @api_key
 
       git_url = heroku.app.info(@app_name)['git_url']
-      fail 'Cannot determine git url' if git_url.blank?
+      fail 'Cannot determine git url' unless git_url
 
       # Fetch whats currently deployed
       system "[ \"$(git remote | grep -e ^#{remote})\" != '' ] && git remote rm #{remote}"
@@ -35,14 +47,15 @@ module HerokuHelper
       migrate
       maintenance(false) if enable_maintenance
       scale worker: worker, clock: clock
+      HerokuHelper.logger.info "Deployed #{@app_name}"
     end
 
     def maintenance(enabled)
       heroku = PlatformAPI.connect_oauth @api_key
       if enabled
-        puts "Enabling maintenance for #{@app_name}".cyan
+        HerokuHelper.logger.info "Enabling maintenance for #{@app_name}"
       else
-        puts "Disabling maintenance for #{@app_name}".cyan
+        HerokuHelper.logger.info "Disabling maintenance for #{@app_name}"
       end
       heroku.app.update(@app_name, maintenance: enabled)
     end
@@ -56,11 +69,11 @@ module HerokuHelper
       response = heroku.dyno.create(@app_name, payload)
 
       begin
-        puts 'Running migrations'.cyan
+        HerokuHelper.logger.info 'Running migrations'
         # set an activity timeout so it doesn't block forever
         Rendezvous.start(url: response['attach_url'], activity_timeout: 600)
       rescue => e
-        log.error("Error capturing output for dyno\n#{e.message}")
+        HerokuHelper.logger.error("Error capturing output for dyno\n#{e.message}")
       end
     end
 
@@ -71,7 +84,9 @@ module HerokuHelper
         updates: []
       }
 
-      formations = heroku.formation.list(@app_name)
+      heroku_formation = heroku.formation
+
+      formations = heroku_formation.list(@app_name)
       formations.each do |formation|
         size = formation['size']
         if !worker.nil? && formation['type'] == 'worker'
@@ -81,9 +96,9 @@ module HerokuHelper
               quantity: worker,
               size: size
             }
-            puts "Scaling worker to #{worker}".cyan
+            HerokuHelper.logger.info "Scaling worker to #{worker}"
           else
-            puts "Worker is already scaled to #{worker}".yellow
+            HerokuHelper.logger.warn "Worker is already scaled to #{worker}"
           end
         elsif !clock.nil? && formation['type'] == 'clock'
           if formation['quantity'] != clock
@@ -92,26 +107,26 @@ module HerokuHelper
               quantity: clock,
               size: size
             }
-            puts "Scaling clock to #{clock}".cyan
+            HerokuHelper.logger.info "Scaling clock to #{clock}"
           else
-            puts "Clock is already scaled to #{clock}".yellow
+            HerokuHelper.logger.warn "Clock is already scaled to #{clock}"
           end
         end
       end
 
       if payload[:updates].empty?
-        puts 'Warning: nothing to scale. Please check your configurations'.yellow
+        HerokuHelper.logger.warn 'Nothing to scale. Please check your configurations'
       else
         if payload[:updates].map { |u| u[:size] }.uniq.include? 'Free'
-          puts 'Warning: you can only run 2 dynos on the free tier'.yellow
+          HerokuHelper.logger.warn 'You can only run 2 dynos on the free tier'
           updates = payload[:updates].sort { |a, b| a[:quantity] <=> b[:quantity] }
           updates.each do |update|
             type = update[:process]
             quantity = update[:quantity]
-            heroku.formation.update(@app_name, type, quantity: quantity)
+            heroku_formation.update(@app_name, type, quantity: quantity)
           end
         else
-          heroku.formation.batch_update(@app_name, payload)
+          heroku_formation.batch_update(@app_name, payload)
         end
       end
     end
@@ -119,12 +134,15 @@ module HerokuHelper
     def restart
       heroku = PlatformAPI.connect_oauth @api_key
       heroku.dyno.restart_all @app_name
+      HerokuHelper.logger.info "#{app_name} restarted"
     end
 
     def version
       heroku = PlatformAPI.connect_oauth @api_key
       build = heroku.build.list(@app_name).last
-      build['source_blob']['version']
+      build['source_blob']['version'].tap do |version|
+        HerokuHelper.logger.info "#{@app_name}::version #{version}"
+      end
     end
   end
 end

@@ -26,6 +26,11 @@ Or install it yourself as:
 
 ## Usage
 
+Log output can be customized by setting the logger:
+```ruby
+HerokuHelper.logger = Logger.new(STDOUT)
+```
+
 TODO: Write usage instructions here
 
 ## Development
