@@ -26,4 +26,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'platform-api', '~> 0.3'
   spec.add_dependency 'rendezvous', '~> 0.1'
+  spec.add_dependency 'git', '>= 1.2.6'
 end

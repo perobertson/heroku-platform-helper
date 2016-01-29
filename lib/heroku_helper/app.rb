@@ -1,4 +1,5 @@
 require 'logger'
+require 'git'
 require 'platform-api'
 require 'rendezvous'
 
@@ -28,26 +29,33 @@ module HerokuHelper
       git_url = heroku.app.info(@app_name)['git_url']
       fail 'Cannot determine git url' unless git_url
 
-      # Fetch whats currently deployed
-      system "[ \"$(git remote | grep -e ^#{remote})\" != '' ] && git remote rm #{remote}"
-      unless system "git remote add #{remote} #{git_url}"
-        fail "Could not add #{remote} remote #{git_url}"
-      end
-      unless system "git fetch #{remote} master"
-        fail "Could not fetch master from #{remote}"
+      # Set up git to deploy
+      begin
+        git = Git.open('.', log: HerokuHelper.logger)
+        remotes = git.remotes.map &:name
+        if remotes.include? remote
+          HerokuHelper.logger.info "Resetting remote: #{remote}"
+          git.remove_remote remote
+        end
+
+        git.add_remote remote, git_url, fetch: true, track: 'master'
+      rescue => e
+        HerokuHelper.logger.error "Could not set up git correctly. Error: #{e}"
+        return false
       end
 
       scale worker: 0, clock: 0
       maintenance(true) if enable_maintenance
 
-      unless system "git push #{remote} #{branch}:master"
-        fail "Failed to push branch(#{branch}) to remote(#{remote})"
-      end
+      git.push remote, "#{branch}:master"
 
       migrate
       maintenance(false) if enable_maintenance
       scale worker: worker, clock: clock
       HerokuHelper.logger.info "Deployed #{@app_name}"
+      true
+    rescue => e
+      HerokuHelper.logger.error "FAILED TO DEPLOY! Your app is in a bad state and needs to be fixed manually. Error: #{e}"
     end
 
     def maintenance(enabled)
