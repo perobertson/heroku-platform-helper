@@ -10,6 +10,20 @@ module HerokuHelper
     def logger
       @logger ||= Logger.new(STDOUT).tap do |log|
         log.progname = self.name
+        case ENV['LOG_LEVEL']
+        when 'unknown'
+          log.level = Logger::UNKNOWN
+        when 'fatal'
+          log.level = Logger::FATAL
+        when 'error'
+          log.level = Logger::ERROR
+        when 'warn'
+          log.level = Logger::WARN
+        when 'info'
+          log.level = Logger::INFO
+        else
+          log.level = Logger::DEBUG
+        end
       end
     end
   end

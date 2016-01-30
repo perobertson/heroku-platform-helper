@@ -9,6 +9,10 @@ RSpec.describe HerokuHelper::App do
     HerokuHelper.logger = @logger
   end
 
+  after do
+    HerokuHelper.logger = nil
+  end
+
   let(:app) { HerokuHelper::App.new('SECRET_KEY', 'APP_NAME') }
 
   it 'can retrieve the running version' do
