@@ -204,6 +204,7 @@ RSpec.describe HerokuHelper::App do
     expect(@logger).to receive(:info).with(/[Dd]eployed.*APP_NAME/)
 
     expect(Git).to receive(:open).with('.', hash_including(log: @logger)) { git }
+    expect(git).to receive(:config).with(/ssh/, /https/)
     expect(git).to receive(:remotes) { [] }
     expect(git).to receive(:add_remote).with(app.app_name, 'git@heroku.com:example.git', hash_including(fetch: true, track: 'master'))
     expect(git).to receive(:push).with(app.app_name, 'HEAD:master')
@@ -229,6 +230,7 @@ RSpec.describe HerokuHelper::App do
     expect(@logger).to receive(:error).with(/Could not set up git/)
 
     expect(Git).to receive(:open).with('.', hash_including(log: @logger)) { git }
+    expect(git).to receive(:config).with(/ssh/, /https/)
     expect(git).to receive(:remotes) { [] }
     expect(git).to receive(:add_remote).and_raise
 
@@ -253,6 +255,7 @@ RSpec.describe HerokuHelper::App do
     expect(@logger).to receive(:error).with(/FAILED TO DEPLOY! Your app is in a bad state and needs to be fixed manually./)
 
     expect(Git).to receive(:open).with('.', hash_including(log: @logger)) { git }
+    expect(git).to receive(:config).with(/ssh/, /https/)
     expect(git).to receive(:remotes) { [] }
     expect(git).to receive(:add_remote)
     expect(git).to receive(:push).and_raise

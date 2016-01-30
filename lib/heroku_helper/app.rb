@@ -37,6 +37,8 @@ module HerokuHelper
       # Set up git to deploy
       begin
         git = Git.open('.', log: HerokuHelper.logger)
+        git.config('url.ssh://git@heroku.com/.insteadOf', 'https://git.heroku.com/')
+
         remotes = git.remotes.map &:name
         if remotes.include? remote
           HerokuHelper.logger.info "Resetting remote: #{remote}"
