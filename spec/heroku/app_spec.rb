@@ -9,6 +9,10 @@ RSpec.describe HerokuHelper::App do
     HerokuHelper.logger = @logger
   end
 
+  after do
+    HerokuHelper.logger = nil
+  end
+
   let(:app) { HerokuHelper::App.new('SECRET_KEY', 'APP_NAME') }
 
   it 'can retrieve the running version' do
@@ -197,15 +201,17 @@ RSpec.describe HerokuHelper::App do
   end
 
   it 'can deploy the app' do
-    app.define_singleton_method 'system' do |*_args|
-      # TODO: find a better way to manage git
-      # this just prevents the system calls from actually being run
-      true
-    end
-
     heroku_app = double('heroku_app')
+    git = double('git')
 
+    expect(@logger).to receive(:info).with(/[Hh]eroku repo/)
     expect(@logger).to receive(:info).with(/[Dd]eployed.*APP_NAME/)
+
+    expect(Git).to receive(:open).with('.', hash_including(log: @logger)) { git }
+    expect(git).to receive(:config).with(/ssh/, /https/)
+    expect(git).to receive(:remotes) { [] }
+    expect(git).to receive(:add_remote).with(app.app_name, 'git@heroku.com:example.git', hash_including(fetch: true, track: 'master'))
+    expect(git).to receive(:push).with(app.app_name, 'HEAD:master')
 
     expect(@client).to receive(:app).with(no_args) { heroku_app }
     expect(heroku_app).to receive(:info).with(app.app_name) {
@@ -215,7 +221,59 @@ RSpec.describe HerokuHelper::App do
     }
     expect(app).to receive(:scale).twice
     expect(app).to receive(:migrate)
+    expect(app).to_not receive(:maintenance)
 
-    app.deploy branch: 'HEAD'
+    expect(app.deploy(branch: 'HEAD')).to be_truthy
+  end
+
+  it 'logs an error when it cannot fetch the remote during deploy' do
+    heroku_app = double('heroku_app')
+    git = double('git')
+
+    expect(@logger).to receive(:info).with(/[Hh]eroku repo/)
+    expect(@logger).to receive(:error).with(/Could not set up git/)
+
+    expect(Git).to receive(:open).with('.', hash_including(log: @logger)) { git }
+    expect(git).to receive(:config).with(/ssh/, /https/)
+    expect(git).to receive(:remotes) { [] }
+    expect(git).to receive(:add_remote).and_raise
+
+    expect(@client).to receive(:app).with(no_args) { heroku_app }
+    expect(heroku_app).to receive(:info).with(app.app_name) {
+      {
+        'git_url' => 'git@heroku.com:example.git'
+      }
+    }
+    expect(app).to_not receive(:scale)
+    expect(app).to_not receive(:migrate)
+    expect(app).to_not receive(:maintenance)
+
+    expect(app.deploy(branch: 'HEAD')).to be_falsy
+  end
+
+  it 'logs an error when an error occurs during deploy' do
+    heroku_app = double('heroku_app')
+    git = double('git')
+
+    expect(@logger).to receive(:info).with(/[Hh]eroku repo/)
+    expect(@logger).to receive(:error).with(/FAILED TO DEPLOY! Your app is in a bad state and needs to be fixed manually./)
+
+    expect(Git).to receive(:open).with('.', hash_including(log: @logger)) { git }
+    expect(git).to receive(:config).with(/ssh/, /https/)
+    expect(git).to receive(:remotes) { [] }
+    expect(git).to receive(:add_remote)
+    expect(git).to receive(:push).and_raise
+
+    expect(@client).to receive(:app).with(no_args) { heroku_app }
+    expect(heroku_app).to receive(:info).with(app.app_name) {
+      {
+        'git_url' => 'git@heroku.com:example.git'
+      }
+    }
+    expect(app).to receive(:scale).once
+    expect(app).to_not receive(:migrate)
+    expect(app).to_not receive(:maintenance)
+
+    expect(app.deploy(branch: 'HEAD')).to be_falsy
   end
 end
