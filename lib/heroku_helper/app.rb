@@ -27,7 +27,12 @@ module HerokuHelper
       heroku = PlatformAPI.connect_oauth @api_key
 
       git_url = heroku.app.info(@app_name)['git_url']
-      fail 'Cannot determine git url' unless git_url
+      if git_url
+        HerokuHelper.logger.info "Heroku repo: #{git_url}"
+      else
+        HerokuHelper.logger.error 'Cannot determine git url'
+        return false
+      end
 
       # Set up git to deploy
       begin

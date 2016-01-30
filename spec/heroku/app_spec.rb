@@ -200,6 +200,7 @@ RSpec.describe HerokuHelper::App do
     heroku_app = double('heroku_app')
     git = double('git')
 
+    expect(@logger).to receive(:info).with(/[Hh]eroku repo/)
     expect(@logger).to receive(:info).with(/[Dd]eployed.*APP_NAME/)
 
     expect(Git).to receive(:open).with('.', hash_including(log: @logger)) { git }
@@ -224,6 +225,7 @@ RSpec.describe HerokuHelper::App do
     heroku_app = double('heroku_app')
     git = double('git')
 
+    expect(@logger).to receive(:info).with(/[Hh]eroku repo/)
     expect(@logger).to receive(:error).with(/Could not set up git/)
 
     expect(Git).to receive(:open).with('.', hash_including(log: @logger)) { git }
@@ -247,6 +249,7 @@ RSpec.describe HerokuHelper::App do
     heroku_app = double('heroku_app')
     git = double('git')
 
+    expect(@logger).to receive(:info).with(/[Hh]eroku repo/)
     expect(@logger).to receive(:error).with(/FAILED TO DEPLOY! Your app is in a bad state and needs to be fixed manually./)
 
     expect(Git).to receive(:open).with('.', hash_including(log: @logger)) { git }
