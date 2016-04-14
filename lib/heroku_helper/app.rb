@@ -77,6 +77,7 @@ module HerokuHelper
       true
     rescue => e
       HerokuHelper.logger.error "FAILED TO DEPLOY! Your app is in a bad state and needs to be fixed manually. Error: #{e}"
+      return false
     end
 
     def maintenance(enabled)
@@ -101,8 +102,10 @@ module HerokuHelper
         HerokuHelper.logger.info 'Running migrations'
         # set an activity timeout so it doesn't block forever
         Rendezvous.start(url: response['attach_url'], activity_timeout: 600)
+        return true
       rescue => e
         HerokuHelper.logger.error("Error capturing output for dyno\n#{e.message}")
+        return false
       end
     end
 
