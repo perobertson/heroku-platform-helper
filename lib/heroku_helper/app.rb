@@ -53,7 +53,7 @@ module HerokuHelper
         git = Git.open('.', log: HerokuHelper.logger)
         git.config('url.ssh://git@heroku.com/.insteadOf', 'https://git.heroku.com/')
 
-        remotes = git.remotes.map &:name
+        remotes = git.remotes.map(&:name)
         if remotes.include? remote
           HerokuHelper.logger.info "Resetting remote: #{remote}"
           git.remove_remote remote
@@ -148,18 +148,16 @@ module HerokuHelper
 
       if payload[:updates].empty?
         HerokuHelper.logger.warn 'Nothing to scale. Please check your configurations'
-      else
-        if payload[:updates].map { |u| u[:size] }.uniq.include? 'Free'
-          HerokuHelper.logger.warn 'You can only run 2 dynos on the free tier'
-          updates = payload[:updates].sort { |a, b| a[:quantity] <=> b[:quantity] }
-          updates.each do |update|
-            type = update[:process]
-            quantity = update[:quantity]
-            heroku_formation.update(@app_name, type, quantity: quantity)
-          end
-        else
-          heroku_formation.batch_update(@app_name, payload)
+      elsif payload[:updates].map { |u| u[:size] }.uniq.include? 'Free'
+        HerokuHelper.logger.warn 'You can only run 2 dynos on the free tier'
+        updates = payload[:updates].sort { |a, b| a[:quantity] <=> b[:quantity] }
+        updates.each do |update|
+          type = update[:process]
+          quantity = update[:quantity]
+          heroku_formation.update(@app_name, type, quantity: quantity)
         end
+      else
+        heroku_formation.batch_update(@app_name, payload)
       end
     end
 

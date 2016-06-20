@@ -162,7 +162,7 @@ RSpec.describe HerokuHelper::App do
     expect(@client).to receive(:dyno).with(no_args) { dyno }
     expect(dyno).to receive(:create).with(app.app_name, kind_of(Hash)) {
       {
-        "attach_url" => "rendezvous://rendezvous.runtime.heroku.com:5000/{rendezvous-id}"
+        'attach_url' => 'rendezvous://rendezvous.runtime.heroku.com:5000/{rendezvous-id}'
       }
     }
     expect(Rendezvous).to receive(:start).with(kind_of(Hash))
